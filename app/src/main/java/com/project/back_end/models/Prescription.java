@@ -1,56 +1,283 @@
 package com.project.back_end.models;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+@Document(collection = "prescriptions")
 public class Prescription {
 
-  // @Document annotation:
-//    - Marks the class as a MongoDB document (a collection in MongoDB).
-//    - The collection name is specified as "prescriptions" to map this class to the "prescriptions" collection in MongoDB.
+    @Id
+    private String id;
 
-// 1. 'id' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the unique identifier for each prescription.
-//      - The @Id annotation marks it as the primary key in the MongoDB collection.
-//      - The id is of type String, which is commonly used for MongoDB's ObjectId as it stores IDs as strings in the database.
+    @NotBlank(message = "Patient name is required")
+    @Size(min = 3, max = 100, message = "Patient name must be between 3 and 100 characters")
+    @Field("patient_name")
+    private String patientName;
 
-// 2. 'patientName' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the name of the patient receiving the prescription.
-//      - The @NotNull annotation ensures that the patient name is required.
-//      - The @Size(min = 3, max = 100) annotation ensures that the name length is between 3 and 100 characters, ensuring a reasonable name length.
+    @NotNull(message = "Appointment ID is required")
+    @Field("appointment_id")
+    private Long appointmentId;
 
-// 3. 'appointmentId' field:
-//    - Type: private Long
-//    - Description:
-//      - Represents the ID of the associated appointment where the prescription was given.
-//      - The @NotNull annotation ensures that the appointment ID is required for the prescription.
+    @NotBlank(message = "Medication is required")
+    @Size(min = 3, max = 100, message = "Medication must be between 3 and 100 characters")
+    private String medication;
 
-// 4. 'medication' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the medication prescribed to the patient.
-//      - The @NotNull annotation ensures that the medication name is required.
-//      - The @Size(min = 3, max = 100) annotation ensures that the medication name is between 3 and 100 characters, which ensures meaningful medication names.
+    @NotBlank(message = "Dosage is required")
+    @Size(min = 3, max = 20, message = "Dosage must be between 3 and 20 characters")
+    private String dosage;
 
-// 5. 'dosage' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the dosage information for the prescribed medication.
-//      - The @NotNull annotation ensures that the dosage information is provided.
+    @Size(max = 200, message = "Doctor notes cannot exceed 200 characters")
+    @Field("doctor_notes")
+    private String doctorNotes;
 
-// 6. 'doctorNotes' field:
-//    - Type: private String
-//    - Description:
-//      - Represents any additional notes or instructions from the doctor regarding the prescription.
-//      - The @Size(max = 200) annotation ensures that the doctor's notes do not exceed 200 characters, providing a reasonable limit for additional notes.
+    @Field("prescribed_date")
+    private LocalDateTime prescribedDate;
 
-// 7. Constructors:
-//    - The class includes a no-argument constructor (default constructor) and a parameterized constructor that initializes the fields: patientName, medication, dosage, doctorNotes, and appointmentId.
+    @Field("duration_days")
+    private Integer durationDays;
 
-// 8. Getters and Setters:
-//    - Standard getter and setter methods are provided for all fields: id, patientName, medication, dosage, doctorNotes, and appointmentId.
-//    - These methods allow access and modification of the fields of the Prescription class.
+    @Field("refills")
+    private Integer refills = 0;
 
+    @Field("is_active")
+    private Boolean isActive = true;
 
+    @Field("doctor_id")
+    private Long doctorId;
+
+    // Timestamps
+    @Field("created_at")
+    private LocalDateTime createdAt;
+
+    @Field("updated_at")
+    private LocalDateTime updatedAt;
+
+    // Default constructor
+    public Prescription() {
+        this.prescribedDate = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // Parameterized constructor for essential fields
+    public Prescription(String patientName, Long appointmentId, String medication, String dosage) {
+        this();
+        this.patientName = patientName;
+        this.appointmentId = appointmentId;
+        this.medication = medication;
+        this.dosage = dosage;
+    }
+
+    // Full parameterized constructor
+    public Prescription(String patientName, Long appointmentId, String medication, 
+                       String dosage, String doctorNotes, Integer durationDays, 
+                       Integer refills, Long doctorId) {
+        this(patientName, appointmentId, medication, dosage);
+        this.doctorNotes = doctorNotes;
+        this.durationDays = durationDays;
+        this.refills = refills;
+        this.doctorId = doctorId;
+    }
+
+    // Helper methods
+
+    public boolean hasRefills() {
+        return refills != null && refills > 0;
+    }
+
+    public boolean isExpired() {
+        if (prescribedDate == null || durationDays == null) return false;
+        return prescribedDate.plusDays(durationDays).isBefore(LocalDateTime.now());
+    }
+
+    public int getRemainingRefills() {
+        return refills != null ? refills : 0;
+    }
+
+    // Builder pattern (optional but useful)
+    public static class Builder {
+        private String patientName;
+        private Long appointmentId;
+        private String medication;
+        private String dosage;
+        private String doctorNotes;
+        private Integer durationDays;
+        private Integer refills;
+        private Long doctorId;
+
+        public Builder patientName(String patientName) {
+            this.patientName = patientName;
+            return this;
+        }
+
+        public Builder appointmentId(Long appointmentId) {
+            this.appointmentId = appointmentId;
+            return this;
+        }
+
+        public Builder medication(String medication) {
+            this.medication = medication;
+            return this;
+        }
+
+        public Builder dosage(String dosage) {
+            this.dosage = dosage;
+            return this;
+        }
+
+        public Builder doctorNotes(String doctorNotes) {
+            this.doctorNotes = doctorNotes;
+            return this;
+        }
+
+        public Builder durationDays(Integer durationDays) {
+            this.durationDays = durationDays;
+            return this;
+        }
+
+        public Builder refills(Integer refills) {
+            this.refills = refills;
+            return this;
+        }
+
+        public Builder doctorId(Long doctorId) {
+            this.doctorId = doctorId;
+            return this;
+        }
+
+        public Prescription build() {
+            return new Prescription(patientName, appointmentId, medication, dosage, 
+                                   doctorNotes, durationDays, refills, doctorId);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    // Getters and Setters
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getPatientName() {
+        return patientName;
+    }
+
+    public void setPatientName(String patientName) {
+        this.patientName = patientName;
+    }
+
+    public Long getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(Long appointmentId) {
+        this.appointmentId = appointmentId;
+    }
+
+    public String getMedication() {
+        return medication;
+    }
+
+    public void setMedication(String medication) {
+        this.medication = medication;
+    }
+
+    public String getDosage() {
+        return dosage;
+    }
+
+    public void setDosage(String dosage) {
+        this.dosage = dosage;
+    }
+
+    public String getDoctorNotes() {
+        return doctorNotes;
+    }
+
+    public void setDoctorNotes(String doctorNotes) {
+        this.doctorNotes = doctorNotes;
+    }
+
+    public LocalDateTime getPrescribedDate() {
+        return prescribedDate;
+    }
+
+    public void setPrescribedDate(LocalDateTime prescribedDate) {
+        this.prescribedDate = prescribedDate;
+    }
+
+    public Integer getDurationDays() {
+        return durationDays;
+    }
+
+    public void setDurationDays(Integer durationDays) {
+        this.durationDays = durationDays;
+    }
+
+    public Integer getRefills() {
+        return refills;
+    }
+
+    public void setRefills(Integer refills) {
+        this.refills = refills;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public Long getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(Long doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String toString() {
+        return "Prescription{" +
+                "id='" + id + '\'' +
+                ", patientName='" + patientName + '\'' +
+                ", appointmentId=" + appointmentId +
+                ", medication='" + medication + '\'' +
+                ", dosage='" + dosage + '\'' +
+                ", prescribedDate=" + prescribedDate +
+                ", isActive=" + isActive +
+                '}';
+    }
 }
