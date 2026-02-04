@@ -9,12 +9,14 @@ import com.project.back_end.models.Prescription;
 
 @Repository
 public interface PrescriptionRepository extends MongoRepository<Prescription, String> {
-
-    /**
-     * Find prescriptions associated with a specific appointment.
-     * 
-     * @param appointmentId the ID of the appointment
-     * @return list of prescriptions for the given appointment
-     */
+    
+    // This method should already exist
     List<Prescription> findByAppointmentId(Long appointmentId);
+    
+    // Add these missing methods:
+    
+    List<Prescription> findByDoctorId(Long doctorId);
+    
+
+    List<Prescription> findByMedicationContainingIgnoreCase(String medicationName);
 }

@@ -1,34 +1,205 @@
 package com.project.back_end.services;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.project.back_end.models.Prescription;
+import com.project.back_end.repo.PrescriptionRepository;
+
+@Service
 public class PrescriptionService {
-    
- // 1. **Add @Service Annotation**:
-//    - The `@Service` annotation marks this class as a Spring service component, allowing Spring's container to manage it.
-//    - This class contains the business logic related to managing prescriptions in the healthcare system.
-//    - Instruction: Ensure the `@Service` annotation is applied to mark this class as a Spring-managed service.
 
-// 2. **Constructor Injection for Dependencies**:
-//    - The `PrescriptionService` class depends on the `PrescriptionRepository` to interact with the database.
-//    - It is injected through the constructor, ensuring proper dependency management and enabling testing.
-//    - Instruction: Constructor injection is a good practice, ensuring that all necessary dependencies are available at the time of service initialization.
+    private final PrescriptionRepository prescriptionRepository;
 
-// 3. **savePrescription Method**:
-//    - This method saves a new prescription to the database.
-//    - Before saving, it checks if a prescription already exists for the same appointment (using the appointment ID).
-//    - If a prescription exists, it returns a `400 Bad Request` with a message stating the prescription already exists.
-//    - If no prescription exists, it saves the new prescription and returns a `201 Created` status with a success message.
-//    - Instruction: Handle errors by providing appropriate status codes and messages, ensuring that multiple prescriptions for the same appointment are not saved.
+    @Autowired
+    public PrescriptionService(PrescriptionRepository prescriptionRepository) {
+        this.prescriptionRepository = prescriptionRepository;
+    }
 
-// 4. **getPrescription Method**:
-//    - Retrieves a prescription associated with a specific appointment based on the `appointmentId`.
-//    - If a prescription is found, it returns it within a map wrapped in a `200 OK` status.
-//    - If there is an error while fetching the prescription, it logs the error and returns a `500 Internal Server Error` status with an error message.
-//    - Instruction: Ensure that this method handles edge cases, such as no prescriptions found for the given appointment, by returning meaningful responses.
+    /**
+     * Save a prescription to the database.
+     * 
+     * @param prescription the prescription to save
+     * @return response with success or error message
+     */
+    public ResponseEntity<Map<String, String>> savePrescription(Prescription prescription) {
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            // Check if prescription already exists for this appointment
+            if (prescription.getAppointmentId() != null) {
+                List<Prescription> existingPrescriptions = prescriptionRepository
+                        .findByAppointmentId(prescription.getAppointmentId());
+                if (!existingPrescriptions.isEmpty()) {
+                    response.put("error", "Prescription already exists for this appointment");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+            
+            // Save the prescription
+            Prescription savedPrescription = prescriptionRepository.save(prescription);
+            
+            response.put("message", "Prescription saved successfully");
+            response.put("prescriptionId", savedPrescription.getId());
+            response.put("appointmentId", savedPrescription.getAppointmentId().toString());
+            
+            return ResponseEntity.status(201).body(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Failed to save prescription: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
-// 5. **Exception Handling and Error Responses**:
-//    - Both methods (`savePrescription` and `getPrescription`) contain try-catch blocks to handle exceptions that may occur during database interaction.
-//    - If an error occurs, the method logs the error and returns an HTTP `500 Internal Server Error` response with a corresponding error message.
-//    - Instruction: Ensure that all potential exceptions are handled properly, and meaningful responses are returned to the client.
+    /**
+     * Retrieve prescription by appointment ID.
+     * 
+     * @param appointmentId the appointment ID
+     * @return response with prescription or error message
+     */
+    public ResponseEntity<Map<String, Object>> getPrescription(Long appointmentId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            List<Prescription> prescriptions = prescriptionRepository
+                    .findByAppointmentId(appointmentId);
+            
+            if (prescriptions.isEmpty()) {
+                response.put("message", "No prescription found for this appointment");
+                response.put("prescriptions", List.of());
+                return ResponseEntity.ok(response);
+            }
+            
+            response.put("prescriptions", prescriptions);
+            response.put("count", prescriptions.size());
+            response.put("appointmentId", appointmentId);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Failed to retrieve prescription: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
+    /**
+     * Get prescription by ID.
+     * 
+     * @param id the prescription ID
+     * @return response with prescription or error message
+     */
+    public ResponseEntity<Map<String, Object>> getPrescriptionById(String id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            return prescriptionRepository.findById(id)
+                    .map(prescription -> {
+                        response.put("prescription", prescription);
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElseGet(() -> {
+                        response.put("error", "Prescription not found with ID: " + id);
+                        return ResponseEntity.status(404).body(response);
+                    });
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Failed to retrieve prescription: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
+    /**
+     * Get prescriptions by doctor ID.
+     * 
+     * @param doctorId the doctor ID
+     * @return response with prescriptions or error message
+     */
+    public ResponseEntity<Map<String, Object>> getPrescriptionsByDoctorId(Long doctorId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            List<Prescription> prescriptions = prescriptionRepository
+                    .findByDoctorId(doctorId);
+            
+            response.put("prescriptions", prescriptions);
+            response.put("count", prescriptions.size());
+            response.put("doctorId", doctorId);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Failed to retrieve prescriptions: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * Update an existing prescription.
+     * 
+     * @param id the prescription ID
+     * @param prescription the updated prescription data
+     * @return response with success or error message
+     */
+    public ResponseEntity<Map<String, String>> updatePrescription(String id, Prescription prescription) {
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            if (!prescriptionRepository.existsById(id)) {
+                response.put("error", "Prescription not found with ID: " + id);
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            // Ensure the ID is set
+            prescription.setId(id);
+            prescriptionRepository.save(prescription);
+            
+            response.put("message", "Prescription updated successfully");
+            response.put("prescriptionId", id);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Failed to update prescription: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * Delete a prescription by ID.
+     * 
+     * @param id the prescription ID
+     * @return response with success or error message
+     */
+    public ResponseEntity<Map<String, String>> deletePrescription(String id) {
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            if (!prescriptionRepository.existsById(id)) {
+                response.put("error", "Prescription not found with ID: " + id);
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            prescriptionRepository.deleteById(id);
+            
+            response.put("message", "Prescription deleted successfully");
+            response.put("prescriptionId", id);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Failed to delete prescription: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 }

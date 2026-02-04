@@ -4,6 +4,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AppointmentDTO {
     private Long id;
     private Long doctorId;
@@ -19,7 +26,7 @@ public class AppointmentDTO {
     private LocalTime appointmentTimeOnly;
     private LocalDateTime endTime;
 
-    // Constructor
+    // Keep your existing constructor
     public AppointmentDTO(Long id, Long doctorId, String doctorName, Long patientId, 
                          String patientName, String patientEmail, String patientPhone, 
                          String patientAddress, LocalDateTime appointmentTime, int status) {
@@ -40,58 +47,5 @@ public class AppointmentDTO {
             this.appointmentTimeOnly = appointmentTime.toLocalTime();
             this.endTime = appointmentTime.plusHours(1);
         }
-    }
-
-    // Getters
-    public Long getId() {
-        return id;
-    }
-
-    public Long getDoctorId() {
-        return doctorId;
-    }
-
-    public String getDoctorName() {
-        return doctorName;
-    }
-
-    public Long getPatientId() {
-        return patientId;
-    }
-
-    public String getPatientName() {
-        return patientName;
-    }
-
-    public String getPatientEmail() {
-        return patientEmail;
-    }
-
-    public String getPatientPhone() {
-        return patientPhone;
-    }
-
-    public String getPatientAddress() {
-        return patientAddress;
-    }
-
-    public LocalDateTime getAppointmentTime() {
-        return appointmentTime;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public LocalDate getAppointmentDate() {
-        return appointmentDate;
-    }
-
-    public LocalTime getAppointmentTimeOnly() {
-        return appointmentTimeOnly;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
     }
 }

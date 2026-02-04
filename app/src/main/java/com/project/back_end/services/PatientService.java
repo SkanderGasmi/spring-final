@@ -1,58 +1,386 @@
 package com.project.back_end.services;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.project.back_end.DTO.AppointmentDTO;
+import com.project.back_end.models.Appointment;
+import com.project.back_end.models.Patient;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.PatientRepository;
+
+@Service
 public class PatientService {
-// 1. **Add @Service Annotation**:
-//    - The `@Service` annotation is used to mark this class as a Spring service component. 
-//    - It will be managed by Spring's container and used for business logic related to patients and appointments.
-//    - Instruction: Ensure that the `@Service` annotation is applied above the class declaration.
 
-// 2. **Constructor Injection for Dependencies**:
-//    - The `PatientService` class has dependencies on `PatientRepository`, `AppointmentRepository`, and `TokenService`.
-//    - These dependencies are injected via the constructor to maintain good practices of dependency injection and testing.
-//    - Instruction: Ensure constructor injection is used for all the required dependencies.
+    private final PatientRepository patientRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final TokenService tokenService;
 
-// 3. **createPatient Method**:
-//    - Creates a new patient in the database. It saves the patient object using the `PatientRepository`.
-//    - If the patient is successfully saved, the method returns `1`; otherwise, it logs the error and returns `0`.
-//    - Instruction: Ensure that error handling is done properly and exceptions are caught and logged appropriately.
+    @Autowired
+    public PatientService(PatientRepository patientRepository,
+                          AppointmentRepository appointmentRepository,
+                          TokenService tokenService) {
+        this.patientRepository = patientRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.tokenService = tokenService;
+    }
 
-// 4. **getPatientAppointment Method**:
-//    - Retrieves a list of appointments for a specific patient, based on their ID.
-//    - The appointments are then converted into `AppointmentDTO` objects for easier consumption by the API client.
-//    - This method is marked as `@Transactional` to ensure database consistency during the transaction.
-//    - Instruction: Ensure that appointment data is properly converted into DTOs and the method handles errors gracefully.
+    /**
+     * Create a new patient.
+     * 
+     * @param patient the patient to create
+     * @return 1 for success, 0 for failure
+     */
+    @Transactional
+    public int createPatient(Patient patient) {
+        try {
+            patientRepository.save(patient);
+            return 1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
 
-// 5. **filterByCondition Method**:
-//    - Filters appointments for a patient based on the condition (e.g., "past" or "future").
-//    - Retrieves appointments with a specific status (0 for future, 1 for past) for the patient.
-//    - Converts the appointments into `AppointmentDTO` and returns them in the response.
-//    - Instruction: Ensure the method correctly handles "past" and "future" conditions, and that invalid conditions are caught and returned as errors.
+    /**
+     * Get all appointments for a specific patient.
+     * 
+     * @param id the patient ID
+     * @param token the JWT token
+     * @return response with appointments or error
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> getPatientAppointment(Long id, String token) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Extract email from token
+            String emailFromToken = tokenService.extractEmail(token);
+            if (emailFromToken == null) {
+                response.put("error", "Invalid token");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            // Get patient by email from token
+            Patient patientFromToken = patientRepository.findByEmail(emailFromToken);
+            if (patientFromToken == null) {
+                response.put("error", "Patient not found");
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            // Verify patient ID matches
+            if (!patientFromToken.getId().equals(id)) {
+                response.put("error", "Unauthorized access to patient appointments");
+                return ResponseEntity.status(403).body(response);
+            }
+            
+            // Get appointments for patient
+            List<Appointment> appointments = appointmentRepository.findByPatientId(id);
+            
+            // Convert to DTOs
+            List<AppointmentDTO> appointmentDTOs = appointments.stream()
+                    .map(appointment -> convertToDTO(appointment))
+                    .collect(Collectors.toList());
+            
+            response.put("appointments", appointmentDTOs);
+            response.put("patientName", patientFromToken.getName());
+            response.put("totalAppointments", appointmentDTOs.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
-// 6. **filterByDoctor Method**:
-//    - Filters appointments for a patient based on the doctor's name.
-//    - It retrieves appointments where the doctor’s name matches the given value, and the patient ID matches the provided ID.
-//    - Instruction: Ensure that the method correctly filters by doctor's name and patient ID and handles any errors or invalid cases.
+    /**
+     * Filter appointments by condition (past or future).
+     * 
+     * @param condition "past" or "future"
+     * @param id patient ID
+     * @return response with filtered appointments
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> filterByCondition(String condition, Long id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            if (!patientRepository.existsById(id)) {
+                response.put("error", "Patient not found");
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            int status;
+            if ("past".equalsIgnoreCase(condition)) {
+                status = 1; // Completed/Closed appointments
+            } else if ("future".equalsIgnoreCase(condition)) {
+                status = 0; // Scheduled/Upcoming appointments
+            } else {
+                response.put("error", "Invalid condition. Use 'past' or 'future'");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            List<Appointment> appointments = appointmentRepository
+                    .findByPatient_IdAndStatusOrderByAppointmentTimeAsc(id, status);
+            
+            List<AppointmentDTO> appointmentDTOs = appointments.stream()
+                    .map(appointment -> convertToDTO(appointment))
+                    .collect(Collectors.toList());
+            
+            response.put("appointments", appointmentDTOs);
+            response.put("condition", condition);
+            response.put("totalAppointments", appointmentDTOs.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
-// 7. **filterByDoctorAndCondition Method**:
-//    - Filters appointments based on both the doctor's name and the condition (past or future) for a specific patient.
-//    - This method combines filtering by doctor name and appointment status (past or future).
-//    - Converts the appointments into `AppointmentDTO` objects and returns them in the response.
-//    - Instruction: Ensure that the filter handles both doctor name and condition properly, and catches errors for invalid input.
+    /**
+     * Filter appointments by doctor name.
+     * 
+     * @param name doctor name (partial match)
+     * @param patientId patient ID
+     * @return response with filtered appointments
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> filterByDoctor(String name, Long patientId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            if (!patientRepository.existsById(patientId)) {
+                response.put("error", "Patient not found");
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            List<Appointment> appointments = appointmentRepository
+                    .filterByDoctorNameAndPatientId(name, patientId);
+            
+            List<AppointmentDTO> appointmentDTOs = appointments.stream()
+                    .map(appointment -> convertToDTO(appointment))
+                    .collect(Collectors.toList());
+            
+            response.put("appointments", appointmentDTOs);
+            response.put("doctorName", name);
+            response.put("patientId", patientId);
+            response.put("totalAppointments", appointmentDTOs.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
-// 8. **getPatientDetails Method**:
-//    - Retrieves patient details using the `tokenService` to extract the patient's email from the provided token.
-//    - Once the email is extracted, it fetches the corresponding patient from the `patientRepository`.
-//    - It returns the patient's information in the response body.
-    //    - Instruction: Make sure that the token extraction process works correctly and patient details are fetched properly based on the extracted email.
+    /**
+     * Filter appointments by doctor name and condition.
+     * 
+     * @param condition "past" or "future"
+     * @param name doctor name (partial match)
+     * @param patientId patient ID
+     * @return response with filtered appointments
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> filterByDoctorAndCondition(String condition, 
+                                                                          String name, 
+                                                                          long patientId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            if (!patientRepository.existsById(patientId)) {
+                response.put("error", "Patient not found");
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            int status;
+            if ("past".equalsIgnoreCase(condition)) {
+                status = 1; // Completed/Closed appointments
+            } else if ("future".equalsIgnoreCase(condition)) {
+                status = 0; // Scheduled/Upcoming appointments
+            } else {
+                response.put("error", "Invalid condition. Use 'past' or 'future'");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            List<Appointment> appointments = appointmentRepository
+                    .filterByDoctorNameAndPatientIdAndStatus(name, patientId, status);
+            
+            List<AppointmentDTO> appointmentDTOs = appointments.stream()
+                    .map(appointment -> convertToDTO(appointment))
+                    .collect(Collectors.toList());
+            
+            response.put("appointments", appointmentDTOs);
+            response.put("condition", condition);
+            response.put("doctorName", name);
+            response.put("patientId", patientId);
+            response.put("totalAppointments", appointmentDTOs.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
-// 9. **Handling Exceptions and Errors**:
-//    - The service methods handle exceptions using try-catch blocks and log any issues that occur. If an error occurs during database operations, the service responds with appropriate HTTP status codes (e.g., `500 Internal Server Error`).
-//    - Instruction: Ensure that error handling is consistent across the service, with proper logging and meaningful error messages returned to the client.
+    /**
+     * Get patient details from token.
+     * 
+     * @param token JWT token
+     * @return response with patient details
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> getPatientDetails(String token) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            String email = tokenService.extractEmail(token);
+            if (email == null) {
+                response.put("error", "Invalid token");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            Patient patient = patientRepository.findByEmail(email);
+            if (patient == null) {
+                response.put("error", "Patient not found");
+                return ResponseEntity.status(404).body(response);
+            }
+            
+            // Create a response with only necessary patient details
+            Map<String, Object> patientDetails = new HashMap<>();
+            patientDetails.put("id", patient.getId());
+            patientDetails.put("name", patient.getName());
+            patientDetails.put("email", patient.getEmail());
+            patientDetails.put("phone", patient.getPhone());
+            patientDetails.put("address", patient.getAddress());
+            
+            response.put("patient", patientDetails);
+            response.put("message", "Patient details retrieved successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("error", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
-// 10. **Use of DTOs (Data Transfer Objects)**:
-//    - The service uses `AppointmentDTO` to transfer appointment-related data between layers. This ensures that sensitive or unnecessary data (e.g., password or private patient information) is not exposed in the response.
-//    - Instruction: Ensure that DTOs are used appropriately to limit the exposure of internal data and only send the relevant fields to the client.
+    /**
+     * Convert Appointment entity to AppointmentDTO.
+     * 
+     * @param appointment the appointment entity
+     * @return the appointment DTO
+     */
+    private AppointmentDTO convertToDTO(Appointment appointment) {
+        AppointmentDTO dto = new AppointmentDTO();
+        dto.setId(appointment.getId());
+        dto.setAppointmentTime(appointment.getAppointmentTime());
+        dto.setStatus(appointment.getStatus());
+        
+        if (appointment.getDoctor() != null) {
+            dto.setDoctorName(appointment.getDoctor().getName());
+            dto.setDoctorId(appointment.getDoctor().getId());
+        }
+        
+        if (appointment.getPatient() != null) {
+            dto.setPatientName(appointment.getPatient().getName());
+            dto.setPatientId(appointment.getPatient().getId());
+        }
+        
+        return dto;
+    }
 
+    /**
+     * Get patient by email.
+     * 
+     * @param email patient email
+     * @return the patient or null if not found
+     */
+    @Transactional(readOnly = true)
+    public Patient getPatientByEmail(String email) {
+        return patientRepository.findByEmail(email);
+    }
 
+    /**
+     * Get patient by ID.
+     * 
+     * @param id patient ID
+     * @return the patient or null if not found
+     */
+    @Transactional(readOnly = true)
+    public Patient getPatientById(Long id) {
+        return patientRepository.findById(id).orElse(null);
+    }
 
+    /**
+     * Check if patient exists by email.
+     * 
+     * @param email patient email
+     * @return true if exists, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean patientExistsByEmail(String email) {
+        return patientRepository.findByEmail(email) != null;
+    }
+
+    /**
+     * Update patient information.
+     * 
+     * @param patient updated patient data
+     * @return 1 for success, 0 for failure
+     */
+    @Transactional
+    public int updatePatient(Patient patient) {
+        try {
+            if (!patientRepository.existsById(patient.getId())) {
+                return -1; // Patient not found
+            }
+            patientRepository.save(patient);
+            return 1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * Get upcoming appointments for a patient.
+     * 
+     * @param patientId patient ID
+     * @return list of upcoming appointments
+     */
+    @Transactional(readOnly = true)
+    public List<Appointment> getUpcomingAppointments(Long patientId) {
+        return appointmentRepository.findByPatient_IdAndStatusOrderByAppointmentTimeAsc(
+                patientId, 0); // Status 0 = upcoming
+    }
+
+    /**
+     * Get past appointments for a patient.
+     * 
+     * @param patientId patient ID
+     * @return list of past appointments
+     */
+    @Transactional(readOnly = true)
+    public List<Appointment> getPastAppointments(Long patientId) {
+        return appointmentRepository.findByPatient_IdAndStatusOrderByAppointmentTimeAsc(
+                patientId, 1); // Status 1 = past/completed
+    }
 }
