@@ -1,53 +1,161 @@
-/* this is the style sheet file for index.htlm  */
+/* this is the style sheet file for index.html */
 
-/* 
-**Global Reset (`*`)**
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-* Remove all default margin and padding.
-* Use `border-box` for sizing to include padding and border in element size.
+html,
+body {
+  height: 100%;
+  font-family: 'Roboto', sans-serif;
+}
 
-**Base (`html, body`)**
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
-* Set height to 100% for full viewport layout.
-* Use the `'Roboto'` sans-serif font for modern, clean typography.
+h2 {
+  font-size: 48px;
+  margin-bottom: 50px;
+  color: #003e3e;
+  font-weight: bold;
+  font-family: 'Alegreya', 'Roboto', sans-serif;
+}
 
-**Layout Wrapper (`.wrapper`)**
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  background-image: url('../images/defineRole/index.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
 
-* Use a vertical flexbox layout.
-* Ensure the wrapper covers at least the full height of the screen (`min-height: 100vh`).
+button {
+  background-color: #015c5d;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  width: 200px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
 
-**Heading (`h2`)**
+button:hover {
+  background-color: #A62B1F;
+}
 
-* Set a large font size (`48px`) for prominence.
-* Add a bottom margin of `50px` for spacing.
-* Use a dark teal color (`#003e3e`).
-* Make the font bold and use a blended font stack (`'Alegreya', 'Roboto', sans-serif`) for elegant styling.
+.dashboard-btn {
+  background-color: #015c5d;
+}
 
-**Main Section (`.main-content`)**
+.dashboard-btn:hover {
+  background-color: #003e3e;
+}
 
-* Allow the section to grow to fill space with `flex-grow: 1`.
-* Add `40px` of internal padding.
-* Center content both horizontally and vertically using `justify-content` and `align-items`.
-* Display items in a column direction.
-* Center all text.
-* Apply a full-screen background image with:
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
 
-  * `cover` size
-  * `center` positioning
-  * no repeat
-  * `fixed` attachment to keep image still during scroll
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+}
 
-**Buttons (`button`)**
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
 
-* Style with a teal green background (`#015c5d`) and white text.
-* Remove borders and round the corners (`12px`).
-* Use `10px 20px` padding and set width to `200px`.
-* Add a top margin of `10px` for spacing.
-* Enable pointer cursor and readable font size (`16px`).
-* On hover, change background color to bold red (`#A62B1F`).
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #003e3e;
+  color: white;
+}
 
-**Dashboard Buttons (`.dashboard-btn`)**
+.header .logo {
+  width: 50px;
+  height: 50px;
+}
 
-* Use the same base green background (`#015c5d`) as the default button.
-* On hover, darken the background to deep teal (`#003e3e`) for visual feedback.
- */
+.nav-items {
+  display: flex;
+  gap: 20px;
+}
+
+.input-field,
+.select-dropdown {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.input-field:hover,
+.select-dropdown:hover {
+  border-color: #015c5d;
+}
+
+.input-field:focus,
+.select-dropdown:focus {
+  outline: none;
+  border-color: #003e3e;
+  box-shadow: 0 0 5px rgba(0, 62, 62, 0.3);
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .nav-items {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  h2 {
+    font-size: 36px;
+  }
+}
