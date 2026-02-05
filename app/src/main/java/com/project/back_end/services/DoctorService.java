@@ -1,20 +1,26 @@
 package com.project.back_end.services;
 
-import com.project.back_end.DTO.Login;
-import com.project.back_end.models.Appointment;
-import com.project.back_end.models.Doctor;
-import com.project.back_end.repo.AppointmentRepository;
-import com.project.back_end.repo.DoctorRepository;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.project.back_end.DTO.Login;
+import com.project.back_end.models.Appointment;
+import com.project.back_end.models.Doctor;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.DoctorRepository;
 
 @Service
 public class DoctorService {
@@ -221,7 +227,7 @@ public class DoctorService {
      * @return map with filtered doctors
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorsByNameSpecilityandTime(String name, String specialty, String amOrPm) {
+    public Map<String, Object> filterDoctorsByNameSpecialityAndTime(String name, String specialty, String amOrPm) {
         Map<String, Object> response = new HashMap<>();
         
         List<Doctor> doctors = doctorRepository
@@ -265,7 +271,7 @@ public class DoctorService {
      * @return map with filtered doctors
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorByNameAndSpecility(String name, String specialty) {
+    public Map<String, Object> filterDoctorByNameAndSpeciality(String name, String specialty) {
         Map<String, Object> response = new HashMap<>();
         
         List<Doctor> doctors = doctorRepository
@@ -286,7 +292,7 @@ public class DoctorService {
      * @return map with filtered doctors
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorByTimeAndSpecility(String specialty, String amOrPm) {
+    public Map<String, Object> filterDoctorByTimeAndSpeciality(String specialty, String amOrPm) {
         Map<String, Object> response = new HashMap<>();
         
         List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);
@@ -306,7 +312,7 @@ public class DoctorService {
      * @return map with filtered doctors
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorBySpecility(String specialty) {
+    public Map<String, Object> filterDoctorBySpeciality(String specialty) {
         Map<String, Object> response = new HashMap<>();
         
         List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);

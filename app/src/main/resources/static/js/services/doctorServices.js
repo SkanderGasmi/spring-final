@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "../config/config.js";
 
 // Define a constant DOCTOR_API to hold the full endpoint for doctor-related actions
-const DOCTOR_API = API_BASE_URL + '/doctor';
+const DOCTOR_API = API_BASE_URL + '/api/doctor';
 
 // Function: getDoctors
 // Purpose: Fetch the list of all doctors from the API
@@ -118,3 +118,90 @@ export async function filterDoctors(name, time, specialty) {
     return [];
   }
 }
+
+// Function: adminAddDoctor
+// Purpose: Add a new doctor (used by admin in modal)
+export async function adminAddDoctor() {
+  console.log('Admin adding new doctor...');
+
+  try {
+    // Get form values from the modal
+    const name = document.getElementById('doctorName')?.value;
+    const specialization = document.getElementById('specialization')?.value;
+    const email = document.getElementById('doctorEmail')?.value;
+    const password = document.getElementById('doctorPassword')?.value;
+    const phone = document.getElementById('doctorPhone')?.value;
+
+    // Get selected availability slots
+    const availabilityCheckboxes = document.querySelectorAll('input[name="availability"]:checked');
+    const availability = Array.from(availabilityCheckboxes).map(cb => cb.value);
+
+    // Validate inputs
+    if (!name || !specialization || !email || !password || !phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (availability.length === 0) {
+      alert('Please select at least one availability slot');
+      return;
+    }
+
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Session expired. Please login again.');
+      window.location.href = '/';
+      return;
+    }
+
+    // Prepare doctor data
+    const doctorData = {
+      name: name,
+      email: email,
+      password: password,
+      phone: phone,
+      specialization: specialization,
+      availability: availability
+    };
+
+    console.log('Sending doctor data:', doctorData);
+
+    // Use the existing saveDoctor function from this file
+    const result = await saveDoctor(doctorData, token);
+
+    if (result.success) {
+      alert('Doctor added successfully!');
+
+      // Close modal
+      document.getElementById('modal').style.display = 'none';
+
+      // Clear form fields
+      document.getElementById('doctorName').value = '';
+      document.getElementById('specialization').value = '';
+      document.getElementById('doctorEmail').value = '';
+      document.getElementById('doctorPassword').value = '';
+      document.getElementById('doctorPhone').value = '';
+
+      // Uncheck all availability checkboxes
+      availabilityCheckboxes.forEach(cb => cb.checked = false);
+
+      // Refresh the doctor list
+      if (typeof loadDoctors === 'function') {
+        loadDoctors();
+      } else {
+        // Optionally reload the page
+        // window.location.reload();
+      }
+    } else {
+      alert('Failed to add doctor: ' + result.message);
+    }
+
+  } catch (error) {
+    console.error('Error adding doctor:', error);
+    alert('Failed to add doctor: ' + error.message);
+  }
+}
+
+// Export to global scope for modals.js to use
+window.adminAddDoctor = adminAddDoctor;

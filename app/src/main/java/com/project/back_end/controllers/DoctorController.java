@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.DTO.Login;
@@ -57,10 +58,11 @@ public class DoctorController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getDoctor() {
+    public ResponseEntity<?> getDoctors() {
         var doctors = doctorService.getDoctors();
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("doctors", doctors);
+        response.put("count", doctors.size());
         return ResponseEntity.ok(response);
     }
 
@@ -79,7 +81,7 @@ public class DoctorController {
             return ResponseEntity.ok(response);
         } else if (result == -1) {
             response.put("error", "Doctor already exists");
-            return ResponseEntity.status(409).body(response);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         } else {
             response.put("error", "Some internal error occurred");
             return ResponseEntity.internalServerError().body(response);
@@ -106,7 +108,7 @@ public class DoctorController {
             return ResponseEntity.ok(response);
         } else if (result == -1) {
             response.put("error", "Doctor not found");
-            return ResponseEntity.status(404).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         } else {
             response.put("error", "Some internal error occurred");
             return ResponseEntity.internalServerError().body(response);
@@ -128,37 +130,48 @@ public class DoctorController {
             return ResponseEntity.ok(response);
         } else if (result == -1) {
             response.put("error", "Doctor not found with id");
-            return ResponseEntity.status(404).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         } else {
             response.put("error", "Some internal error occurred");
             return ResponseEntity.internalServerError().body(response);
         }
     }
 
-    @GetMapping("/filter/{name}/{time}/{speciality}")
-    public ResponseEntity<?> filter(
-            @PathVariable String name,
-            @PathVariable String time,
-            @PathVariable String speciality) {
+    @GetMapping("/filter")
+    public ResponseEntity<?> filterDoctors(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String time,
+            @RequestParam(required = false) String speciality) {
+        
+        // Handle null parameters (frontend might send empty strings)
+        if (name == null) name = "";
+        if (time == null) time = "";
+        if (speciality == null) speciality = "";
         
         Map<String, Object> result;
         
+        // Check all three parameters
         if (!name.isEmpty() && !time.isEmpty() && !speciality.isEmpty()) {
-            result = doctorService.filterDoctorsByNameSpecilityandTime(name, speciality, time);
-        } else if (!name.isEmpty() && !time.isEmpty()) {
+            result = doctorService.filterDoctorsByNameSpecialityAndTime(name, speciality, time);
+        }
+        // Check two parameters
+        else if (!name.isEmpty() && !time.isEmpty()) {
             result = doctorService.filterDoctorByNameAndTime(name, time);
         } else if (!name.isEmpty() && !speciality.isEmpty()) {
-            result = doctorService.filterDoctorByNameAndSpecility(name, speciality);
+            result = doctorService.filterDoctorByNameAndSpeciality(name, speciality);
         } else if (!time.isEmpty() && !speciality.isEmpty()) {
-            result = doctorService.filterDoctorByTimeAndSpecility(speciality, time);
-        } else if (!speciality.isEmpty()) {
-            result = doctorService.filterDoctorBySpecility(speciality);
+            result = doctorService.filterDoctorByTimeAndSpeciality(time, speciality);
+        }
+        // Check single parameter
+        else if (!speciality.isEmpty()) {
+            result = doctorService.filterDoctorBySpeciality(speciality);
         } else if (!time.isEmpty()) {
             result = doctorService.filterDoctorsByTime(time);
         } else if (!name.isEmpty()) {
             result = doctorService.findDoctorByName(name);
-        } else {
-            // If all parameters are empty, return all doctors
+        }
+        // No parameters - return all doctors
+        else {
             var doctors = doctorService.getDoctors();
             result = new java.util.HashMap<>();
             result.put("doctors", doctors);
@@ -166,5 +179,18 @@ public class DoctorController {
         }
         
         return ResponseEntity.ok(result);
+    }
+    
+    // Additional endpoint for getting single doctor by ID (optional but useful)
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getDoctorById(@PathVariable long id) {
+        var doctor = doctorService.getDoctorById(id);
+        if (doctor != null) {
+            return ResponseEntity.ok(doctor);
+        } else {
+            Map<String, String> response = new java.util.HashMap<>();
+            response.put("error", "Doctor not found with id: " + id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
     }
 }

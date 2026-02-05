@@ -175,7 +175,7 @@ public class AuthService {
                 time != null && !time.trim().isEmpty()) {
                 
                 // All three filters
-                return doctorService.filterDoctorsByNameSpecilityandTime(name, specialty, time);
+                return doctorService.filterDoctorsByNameSpecialityAndTime(name, specialty, time);
                 
             } else if (name != null && !name.trim().isEmpty() &&
                        time != null && !time.trim().isEmpty()) {
@@ -187,13 +187,13 @@ public class AuthService {
                        specialty != null && !specialty.trim().isEmpty()) {
                 
                 // Name and specialty filters
-                return doctorService.filterDoctorByNameAndSpecility(name, specialty);
+                return doctorService.filterDoctorByNameAndSpeciality(name, specialty);
                 
             } else if (specialty != null && !specialty.trim().isEmpty() &&
                        time != null && !time.trim().isEmpty()) {
                 
                 // Specialty and time filters
-                return doctorService.filterDoctorByTimeAndSpecility(specialty, time);
+                return doctorService.filterDoctorByTimeAndSpeciality(specialty, time);
                 
             } else if (name != null && !name.trim().isEmpty()) {
                 
@@ -203,7 +203,7 @@ public class AuthService {
             } else if (specialty != null && !specialty.trim().isEmpty()) {
                 
                 // Only specialty filter
-                return doctorService.filterDoctorBySpecility(specialty);
+                return doctorService.filterDoctorBySpeciality(specialty);
                 
             } else if (time != null && !time.trim().isEmpty()) {
                 
