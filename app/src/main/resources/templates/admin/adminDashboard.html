@@ -1,4 +1,3 @@
-<!-- adminDashboard.html -->
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
@@ -8,9 +7,11 @@
 
     <link rel="icon" type="image/png" th:href="@{/assets/images/logo/logo.png}" />
 
+    <!-- Correct CSS paths -->
     <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}">
     <link rel="stylesheet" th:href="@{/assets/css/style.css}">
 
+    <!-- Core JS -->
     <script th:src="@{/js/render.js}" defer></script>
     <script th:src="@{/js/util.js}" defer></script>
     <script th:src="@{/js/components/header.js}" defer></script>
@@ -51,8 +52,12 @@
         <div id="modal-body"></div>
     </div>
 
-    <script type="module" src="../js/services/adminDashboard.js" defer></script>
-    <script type="module" src="../js/components/doctorCard.js" defer></script>
+    <!-- CORRECTED PATHS -->
+    <!-- adminDashboard.js is in /js/ NOT /js/services/ -->
+    <script type="module" th:src="@{/js/adminDashboard.js}" defer></script>
+
+    <!-- doctorCard.js is in /js/components/ -->
+    <script type="module" th:src="@{/js/components/doctorCard.js}" defer></script>
 </body>
 
 </html>

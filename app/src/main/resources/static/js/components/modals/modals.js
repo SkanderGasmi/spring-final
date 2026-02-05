@@ -1,5 +1,56 @@
 // modals.js
-export function openModal(type) {
+// SAFETY CHECK - Add this at the VERY TOP of the file
+console.log("Loading modals.js");
+
+// Wait a bit for services to load, then define placeholders if needed
+setTimeout(() => {
+  if (typeof adminLoginHandler === 'undefined') {
+    console.warn('adminLoginHandler not loaded, defining emergency handler');
+    window.adminLoginHandler = function () {
+      console.log('Emergency admin login handler');
+      const username = document.getElementById('username')?.value;
+      const password = document.getElementById('password')?.value;
+
+      if (username && password) {
+        fetch('http://localhost:8080/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.token) {
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('userRole', 'admin');
+              document.getElementById('modal').style.display = 'none';
+              window.location.href = '/adminDashboard';
+            } else {
+              alert('Login failed: ' + (data.message || 'Invalid credentials'));
+            }
+          })
+          .catch(err => {
+            console.error('Login error:', err);
+            alert('Login failed. Please try again.');
+          });
+      }
+    };
+  }
+
+  if (typeof doctorLoginHandler === 'undefined') {
+    window.doctorLoginHandler = function () {
+      alert('Doctor login - services still loading. Try again in a moment.');
+    };
+  }
+
+  if (typeof loginPatient === 'undefined') {
+    window.loginPatient = function () {
+      alert('Patient login - services still loading. Try again in a moment.');
+    };
+  }
+}, 100);
+
+// KEEP THE REST OF YOUR EXISTING openModal FUNCTION EXACTLY AS IS
+function openModal(type) {
   let modalContent = '';
   if (type === 'addDoctor') {
     modalContent = `
@@ -21,7 +72,6 @@ export function openModal(type) {
                         <option value="oncologist">Oncologist</option>
                         <option value="gastroenterologist">Gastroenterologist</option>
                         <option value="general">General Physician</option>
-
         </select>
         <input type="email" id="doctorEmail" placeholder="Email" class="input-field">
         <input type="password" id="doctorPassword" placeholder="Password" class="input-field">
@@ -99,3 +149,6 @@ export function openModal(type) {
     document.getElementById('doctorLoginBtn').addEventListener('click', doctorLoginHandler);
   }
 }
+
+window.openModal = openModal;
+console.log("Modal system ready");

@@ -1,30 +1,100 @@
 package com.project.back_end.mvc;
 
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.project.back_end.services.AuthService;
+
+@Controller
 public class DashboardController {
 
-// 1. Set Up the MVC Controller Class:
-//    - Annotate the class with `@Controller` to indicate that it serves as an MVC controller returning view names (not JSON).
-//    - This class handles routing to admin and doctor dashboard pages based on token validation.
+    @Autowired
+    private AuthService authService;
 
+    // Root route
+    @GetMapping("/")
+    public String index() {
+        return "redirect:/index.html";
+    }
 
-// 2. Autowire the Shared Service:
-//    - Inject the common `Service` class, which provides the token validation logic used to authorize access to dashboards.
+    // Admin dashboard - render Thymeleaf template WITH token validation
+    @GetMapping("/adminDashboard")
+    public ModelAndView adminDashboard(@RequestParam(value = "token", required = false) String token) {
+        System.out.println("DEBUG: adminDashboard() called with token: " + token);
+        
+        ModelAndView mav = new ModelAndView();
+        
+        if (token == null || token.isEmpty()) {
+            mav.setViewName("redirect:/index.html");
+            return mav;
+        }
+        
+        Map<String, String> response = authService.validateToken(token, "ADMIN");
+        if (response.containsKey("error")) {
+            mav.setViewName("redirect:/index.html");
+            return mav;
+        }
+        
+        // Valid token - render Thymeleaf template
+        mav.setViewName("admin/adminDashboard");
+        
+        // Pass user info to template
+        mav.addObject("username", response.get("username"));
+        mav.addObject("role", "ADMIN");
+        // IMPORTANT: Do NOT pass token to template - it should be in localStorage
+        return mav;
+    }
 
-
-// 3. Define the `adminDashboard` Method:
-//    - Handles HTTP GET requests to `/adminDashboard/{token}`.
-//    - Accepts an admin's token as a path variable.
-//    - Validates the token using the shared service for the `"admin"` role.
-//    - If the token is valid (i.e., no errors returned), forwards the user to the `"admin/adminDashboard"` view.
-//    - If invalid, redirects to the root URL, likely the login or home page.
-
-
-// 4. Define the `doctorDashboard` Method:
-//    - Handles HTTP GET requests to `/doctorDashboard/{token}`.
-//    - Accepts a doctor's token as a path variable.
-//    - Validates the token using the shared service for the `"doctor"` role.
-//    - If the token is valid, forwards the user to the `"doctor/doctorDashboard"` view.
-//    - If the token is invalid, redirects to the root URL.
-
-
+    // Doctor dashboard - render Thymeleaf template
+    @GetMapping("/doctorDashboard")
+    public ModelAndView doctorDashboard(@RequestParam(value = "token", required = false) String token) {
+        System.out.println("DEBUG: doctorDashboard() called with token: " + token);
+        
+        ModelAndView mav = new ModelAndView();
+        
+        if (token == null || token.isEmpty()) {
+            mav.setViewName("redirect:/index.html");
+            return mav;
+        }
+        
+        Map<String, String> response = authService.validateToken(token, "DOCTOR");
+        if (response.containsKey("error")) {
+            mav.setViewName("redirect:/index.html");
+            return mav;
+        }
+        
+        mav.setViewName("doctor/doctorDashboard");
+        mav.addObject("username", response.get("username"));
+        mav.addObject("role", "DOCTOR");
+        return mav;
+    }
+    
+    // Patient dashboard - render Thymeleaf template
+    @GetMapping("/patientDashboard")
+    public ModelAndView patientDashboard(@RequestParam(value = "token", required = false) String token) {
+        System.out.println("DEBUG: patientDashboard() called with token: " + token);
+        
+        ModelAndView mav = new ModelAndView();
+        
+        if (token == null || token.isEmpty()) {
+            mav.setViewName("redirect:/index.html");
+            return mav;
+        }
+        
+        Map<String, String> response = authService.validateToken(token, "PATIENT");
+        if (response.containsKey("error")) {
+            mav.setViewName("redirect:/index.html");
+            return mav;
+        }
+        
+        mav.setViewName("patient/patientDashboard");
+        mav.addObject("username", response.get("username"));
+        mav.addObject("role", "PATIENT");
+        return mav;
+    }
 }

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/assets/images/logo/logo.png">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/patientDashboard.css">
+
+    <script src="/js/util.js" defer></script>
+    <script src="/js/components/header.js" defer></script>
+    <script src="/js/components/footer.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="wrapper">
+            <div id="header"></div>
+            <main class="main-content">
+                <h1>Patient Dashboard</h1>
+                <p>Token: <span id="token-display"></span></p>
+                <div id="content">Loading...</div>
+            </main>
+            <div id="footer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check token on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            // Display token for debugging
+            document.getElementById('token-display').textContent = token;
+
+            // Store token
+            localStorage.setItem('token', token);
+
+            // Check if user is patient
+            const role = localStorage.getItem('userRole');
+            if (role !== 'patient') {
+                window.location.href = '/index.html';
+            }
+        });
+    </script>
+
+    <script type="module" src="/js/patientDashboard.js" defer></script>
+</body>
+
+</html>

@@ -3,6 +3,7 @@ package com.project.back_end.controllers;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,9 +37,9 @@ public class PatientController {
 
     @GetMapping("/{token}")
     public ResponseEntity<?> getPatient(@PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "patient");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "patient");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         return patientService.getPatientDetails(token);
     }
@@ -64,9 +65,9 @@ public class PatientController {
 
     @GetMapping("/{id}/{token}")
     public ResponseEntity<?> getPatientAppointment(@PathVariable long id, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "patient");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "patient");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         return patientService.getPatientAppointment(id, token);
     }
@@ -77,9 +78,9 @@ public class PatientController {
             @PathVariable String name,
             @PathVariable String token) {
         
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "patient");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "patient");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         // Extract patient email from token using TokenService

@@ -54,25 +54,25 @@ public class AuthService {
      * @param user the user type (DOCTOR, PATIENT, ADMIN)
      * @return response entity with error message if invalid
      */
-    public ResponseEntity<Map<String, String>> validateToken(String token, String user) {
-        Map<String, String> response = new HashMap<>();
-        
-        try {
-            boolean isValid = tokenService.validateToken(token, user);
-            if (!isValid) {
-                response.put("error", "Invalid or expired token");
-                return ResponseEntity.status(401).body(response);
-            }
-            
-            response.put("message", "Token is valid");
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.put("error", "Error validating token: " + e.getMessage());
-            return ResponseEntity.status(500).body(response);
+    public Map<String, String> validateToken(String token, String user) {
+    Map<String, String> response = new HashMap<>();
+    
+    try {
+        boolean isValid = tokenService.validateToken(token, user);
+        if (!isValid) {
+            response.put("error", "Invalid or expired token");
+            return response;
         }
+        
+        response.put("message", "Token is valid");
+        return response;
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+        response.put("error", "Error validating token: " + e.getMessage());
+        return response;
     }
+}
 
     /**
      * Validate admin login credentials.
@@ -111,6 +111,39 @@ public class AuthService {
             return ResponseEntity.status(500).body(response);
         }
     }
+
+    public ResponseEntity<Map<String, String>> validateDoctorLogin(Login login) {
+    Map<String, String> response = new HashMap<>();
+    
+    try {
+        Doctor doctor = doctorRepository.findByEmail(login.getEmail());
+        
+        if (doctor == null) {
+            response.put("error", "Doctor not found");
+            return ResponseEntity.status(401).body(response);
+        }
+        
+        if (!doctor.getPassword().equals(login.getPassword())) {
+            response.put("error", "Invalid password");
+            return ResponseEntity.status(401).body(response);
+        }
+        
+        // Generate token
+        String token = tokenService.generateToken(doctor.getId(), "DOCTOR");
+        response.put("token", token);
+        response.put("doctorId", doctor.getId().toString());
+        response.put("name", doctor.getName());
+        response.put("email", doctor.getEmail());
+        response.put("message", "Doctor login successful");
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+        response.put("error", "Internal server error: " + e.getMessage());
+        return ResponseEntity.status(500).body(response);
+    }
+}
 
     /**
      * Filter doctors by name, specialty, and available time.

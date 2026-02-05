@@ -1,6 +1,7 @@
 package com.project.back_end.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.project.back_end.services.PrescriptionService;
@@ -23,18 +24,18 @@ public class PrescriptionController {
 
     @PostMapping("/{token}")
     public ResponseEntity<?> savePrescription(@RequestBody Prescription prescription, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "doctor");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "doctor");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         return prescriptionService.savePrescription(prescription);
     }
 
     @GetMapping("/{appointmentId}/{token}")
     public ResponseEntity<?> getPrescription(@PathVariable long appointmentId, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "doctor");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "doctor");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         return prescriptionService.getPrescription(appointmentId);
     }

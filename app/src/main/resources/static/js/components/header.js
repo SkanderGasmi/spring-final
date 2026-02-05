@@ -1,10 +1,9 @@
-// header.js
+// header.js - NO INFINITE LOOP VERSION
 function renderHeader() {
   const headerDiv = document.getElementById("header");
   if (!headerDiv) return;
 
-  // Check if the current page is the root page
-  if (window.location.pathname.endsWith("/")) {
+  if (window.location.pathname.endsWith("/") || window.location.pathname.includes("index.html")) {
     localStorage.removeItem("userRole");
     localStorage.removeItem("token");
     headerDiv.innerHTML = `
@@ -17,11 +16,9 @@ function renderHeader() {
     return;
   }
 
-  // Get user role and token from localStorage
   const role = localStorage.getItem("userRole");
   const token = localStorage.getItem("token");
 
-  // Initialize header content with logo section
   let headerContent = `<header class="header">
         <div class="logo-section">
             <img src="./assets/images/logo/logo.png" alt="Hospital CRM Logo" class="logo-img">
@@ -29,18 +26,18 @@ function renderHeader() {
         </div>
         <nav>`;
 
-  // Handle session expiry or invalid login
-  if ((role === "loggedPatient" || role === "admin" || role === "doctor") && !token) {
+  const isDashboardPage = window.location.pathname.includes("Dashboard");
+
+  if (isDashboardPage && (role === "loggedPatient" || role === "admin" || role === "doctor") && !token) {
     localStorage.removeItem("userRole");
     alert("Session expired or invalid login. Please log in again.");
     window.location.href = "/";
     return;
   }
 
-  // Add role-specific header content
   if (role === "admin") {
     headerContent += `
-            <button id="addDocBtn" class="adminBtn" onclick="openModal('addDoctor')">Add Doctor</button>
+            <button id="addDocBtn" class="adminBtn" onclick="callModal('addDoctor')">Add Doctor</button>
             <a href="#" onclick="logout()">Logout</a>`;
   } else if (role === "doctor") {
     headerContent += `
@@ -57,14 +54,40 @@ function renderHeader() {
             <a href="#" onclick="logoutPatient()">Logout</a>`;
   }
 
-  // Close the header section
   headerContent += `</nav></header>`;
-
-  // Render the header content
   headerDiv.innerHTML = headerContent;
-
-  // Attach event listeners to header buttons
   attachHeaderButtonListeners();
+}
+
+// NEW: Safe function that won't cause infinite loop
+function callModal(modalType) {
+  console.log("Calling modal:", modalType);
+  if (typeof window.openModal === 'function') {
+    window.openModal(modalType);
+  } else {
+    console.error("Modal system not loaded");
+  }
+}
+
+function showLoginModal(role) {
+  console.log("Opening login modal for:", role);
+  let modalType = '';
+  if (role === 'admin') modalType = 'adminLogin';
+  else if (role === 'doctor') modalType = 'doctorLogin';
+  callModal(modalType);
+}
+
+function selectRole(role) {
+  console.log("Role selected:", role);
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("token");
+  sessionStorage.setItem("tempRole", role);
+
+  if (role === "admin" || role === "doctor") {
+    showLoginModal(role);
+  } else if (role === "patient") {
+    window.location.href = "/patientDashboard";
+  }
 }
 
 function attachHeaderButtonListeners() {
@@ -73,13 +96,13 @@ function attachHeaderButtonListeners() {
 
   if (patientLoginBtn) {
     patientLoginBtn.addEventListener("click", function () {
-      openModal('patientLogin');
+      callModal('patientLogin');
     });
   }
 
   if (patientSignupBtn) {
     patientSignupBtn.addEventListener("click", function () {
-      openModal('patientSignup');
+      callModal('patientSignup');
     });
   }
 }
@@ -96,15 +119,16 @@ function logoutPatient() {
   window.location.href = "/pages/patientDashboard.html";
 }
 
-function openModal(modalType) {
-  console.log("Open modal for:", modalType);
-  // This function would be implemented in modals.js
+// Login success handler
+function handleLoginSuccess(token, role) {
+  console.log("Login success - storing credentials");
+  const selectedRole = sessionStorage.getItem("tempRole") || role;
+  localStorage.setItem("userRole", selectedRole);
+  localStorage.setItem("token", token);
+  sessionStorage.removeItem("tempRole");
+  window.location.href = `/${selectedRole.toLowerCase()}Dashboard?token=${token}`;
 }
 
-function selectRole(role) {
-  localStorage.setItem("selectedRole", role);
-  window.location.href = "/";
-}
+// Remove the problematic openModal function entirely
 
-// Call renderHeader when the page loads
 document.addEventListener("DOMContentLoaded", renderHeader);

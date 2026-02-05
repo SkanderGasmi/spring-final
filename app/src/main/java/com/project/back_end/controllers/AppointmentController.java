@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,9 +38,9 @@ public class AppointmentController {
             @PathVariable String patientName,
             @PathVariable String token) {
         
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "doctor");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "doctor");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         LocalDate appointmentDate = LocalDate.parse(date);
@@ -54,9 +55,9 @@ public class AppointmentController {
 
     @PostMapping("/{token}")
     public ResponseEntity<?> bookAppointment(@RequestBody Appointment appointment, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> tokenValidation = authService.validateToken(token, "patient");
-        if (!tokenValidation.getStatusCode().is2xxSuccessful()) {
-            return tokenValidation;
+        Map<String, String> tokenValidation = authService.validateToken(token, "patient");
+        if (tokenValidation.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(tokenValidation);
         }
         
         int result = appointmentService.bookAppointment(appointment);
@@ -73,9 +74,9 @@ public class AppointmentController {
 
     @PutMapping("/{token}")
     public ResponseEntity<?> updateAppointment(@RequestBody Appointment appointment, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "patient");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "patient");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         return appointmentService.updateAppointment(appointment);
@@ -83,9 +84,9 @@ public class AppointmentController {
 
     @DeleteMapping("/{id}/{token}")
     public ResponseEntity<?> cancelAppointment(@PathVariable long id, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "patient");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "patient");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         return appointmentService.cancelAppointment(id, token);

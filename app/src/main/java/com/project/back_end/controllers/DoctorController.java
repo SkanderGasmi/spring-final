@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,9 +40,9 @@ public class DoctorController {
             @PathVariable String date,
             @PathVariable String token) {
         
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, user);
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, user);
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         LocalDate appointmentDate = LocalDate.parse(date);
@@ -65,9 +66,9 @@ public class DoctorController {
 
     @PostMapping("/{token}")
     public ResponseEntity<?> saveDoctor(@RequestBody Doctor doctor, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "admin");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "admin");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         int result = doctorService.saveDoctor(doctor);
@@ -87,14 +88,14 @@ public class DoctorController {
 
     @PostMapping("/login")
     public ResponseEntity<?> doctorLogin(@RequestBody Login login) {
-        return doctorService.validateDoctor(login);
+        return authService.validateDoctorLogin(login);
     }
 
     @PutMapping("/{token}")
     public ResponseEntity<?> updateDoctor(@RequestBody Doctor doctor, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "admin");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "admin");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         int result = doctorService.updateDoctor(doctor);
@@ -114,9 +115,9 @@ public class DoctorController {
 
     @DeleteMapping("/{id}/{token}")
     public ResponseEntity<?> deleteDoctor(@PathVariable long id, @PathVariable String token) {
-        ResponseEntity<Map<String, String>> validationResponse = authService.validateToken(token, "admin");
-        if (!validationResponse.getStatusCode().is2xxSuccessful()) {
-            return validationResponse;
+        Map<String, String> validationResponse = authService.validateToken(token, "admin");
+        if (validationResponse.containsKey("error")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponse);
         }
         
         int result = doctorService.deleteDoctor(id);

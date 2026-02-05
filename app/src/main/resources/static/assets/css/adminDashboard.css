@@ -1,5 +1,4 @@
 /* this is the style sheet for the adminDashboard. */
-
 * {
     margin: 0;
     padding: 0;
@@ -31,7 +30,7 @@ h2 {
     display: flex;
     flex-direction: column;
     text-align: center;
-    background-image: url("index.png");
+    background-image: url("../images/defineRole/index.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

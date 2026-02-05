@@ -1,20 +1,27 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>Select Role</title>
-
     <link rel="icon" href="./assets/images/logo/logo.png">
-
     <link rel="stylesheet" href="./assets/css/index.css">
     <link rel="stylesheet" href="./assets/css/style.css">
 
-    <script src="./js/util.js" defer></script>
-    <script src="./js/render.js" defer></script>
+    <!-- LOAD IN THIS EXACT ORDER -->
+    <!-- 1. Load services FIRST (module) -->
+    <script type="module" src="./js/services/index.js"></script>
+
+    <!-- 2. Load modals.js -->
+    <script src="./js/components/modals/modals.js" defer></script>
+
+    <!-- 3. Load header and footer -->
     <script src="./js/components/header.js" defer></script>
     <script src="./js/components/footer.js" defer></script>
+
+    <!-- 4. Load utility scripts -->
+    <script src="./js/util.js" defer></script>
+    <script src="./js/render.js" defer></script>
 </head>
 
 <body>
@@ -38,8 +45,6 @@
         <button id="closeModal">×</button>
         <div id="modal-body"></div>
     </div>
-
-    <script type="module" src="./js/services/index.js" defer></script>
 </body>
 
 </html>
